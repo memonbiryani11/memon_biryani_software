@@ -22,6 +22,12 @@ $options = [
 
 try {
      $pdo = new PDO($dsn, $user, $pass, $options);
+     
+     // FIX: Connection bante hi collation aur character set ko force kar rahe hain
+     $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_general_ci");
+     $pdo->exec("SET CHARACTER SET utf8mb4");
+     $pdo->exec("SET collation_connection = utf8mb4_general_ci");
+     
 } catch (\PDOException $e) {
      throw new \PDOException($e->getMessage(), (int)$e->getCode());
 }
