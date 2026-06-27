@@ -4,6 +4,9 @@ require_once 'expense_functions.php';
 require_once 'db.php';
 checkSession();
 
+// FIX 1: Connection level par pure session ka collation force karna taake aage kisi page me bhi masla na aaye
+$pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_general_ci");
+
 $userId = $_SESSION['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['clear_notif_id'])) {
@@ -24,20 +27,20 @@ $filter_day      = isset($_GET['filter_day'])      ? $_GET['filter_day']      : 
 $filter_month    = isset($_GET['filter_month'])    ? $_GET['filter_month']    : '';
 $filter_year     = isset($_GET['filter_year'])     ? $_GET['filter_year']     : '';
 
-// FIX: Yahan 'ON c.id = e.category_id' ke sath 'COLLATE utf8mb4_general_ci' force kiya hai taake collation match ho jaye
 $sql    = "SELECT c.id as cat_id, c.category_name, COALESCE(SUM(CASE WHEN 1=1 ";
 $params = [];
 
 if (!empty($filter_category)) { $sql .= "AND e.category_id = ? "; $params[] = $filter_category; }
 
+// FIX 2: Har string/date comparison block ke sath automatic conversion ke liye COLLATE lagaya hai
 if      ($filter_type==='specific_date'  && !empty($specific_date))               { $sql.="AND e.date = ? ";                                                                        $params[]=$specific_date; }
 elseif  ($filter_type==='date_to_date'   && !empty($start_date) && !empty($end_date)) { $sql.="AND e.date BETWEEN ? AND ? ";                                                                $params[]=$start_date; $params[]=$end_date; }
-elseif  ($filter_type==='specific_day'   && !empty($filter_day))                  { $sql.="AND (e.expense_day=? OR DATE_FORMAT(e.date,'%W')=?) ";                                    $params[]=$filter_day;  $params[]=$filter_day; }
-elseif  ($filter_type==='specific_month' && !empty($filter_month))                { $sql.="AND (e.expense_month=? OR DATE_FORMAT(e.date,'%M')=?) ";                                  $params[]=$filter_month;$params[]=$filter_month; }
-elseif  ($filter_type==='specific_year'  && !empty($filter_year))                 { $sql.="AND (e.expense_year=? OR DATE_FORMAT(e.date,'%Y')=?) ";                                   $params[]=$filter_year; $params[]=$filter_year; }
-elseif  ($filter_type==='current_month')                                           { $sql.="AND (e.expense_month=? OR DATE_FORMAT(e.date,'%M')=?) AND (e.expense_year=? OR DATE_FORMAT(e.date,'%Y')=?) "; $params[]=date('F');$params[]=date('F');$params[]=date('Y');$params[]=date('Y'); }
+elseif  ($filter_type==='specific_day'   && !empty($filter_day))                  { $sql.="AND (e.expense_day COLLATE utf8mb4_general_ci = ? OR DATE_FORMAT(e.date,'%W') COLLATE utf8mb4_general_ci = ?) ";                                    $params[]=$filter_day;  $params[]=$filter_day; }
+elseif  ($filter_type==='specific_month' && !empty($filter_month))                { $sql.="AND (e.expense_month COLLATE utf8mb4_general_ci = ? OR DATE_FORMAT(e.date,'%M') COLLATE utf8mb4_general_ci = ?) ";                                  $params[]=$filter_month;$params[]=$filter_month; }
+elseif  ($filter_type==='specific_year'  && !empty($filter_year))                 { $sql.="AND (e.expense_year COLLATE utf8mb4_general_ci = ? OR DATE_FORMAT(e.date,'%Y') COLLATE utf8mb4_general_ci = ?) ";                                   $params[]=$filter_year; $params[]=$filter_year; }
+elseif  ($filter_type==='current_month')                                           { $sql.="AND (e.expense_month COLLATE utf8mb4_general_ci = ? OR DATE_FORMAT(e.date,'%M') COLLATE utf8mb4_general_ci = ?) AND (e.expense_year COLLATE utf8mb4_general_ci = ? OR DATE_FORMAT(e.date,'%Y') COLLATE utf8mb4_general_ci = ?) "; $params[]=date('F');$params[]=date('F');$params[]=date('Y');$params[]=date('Y'); }
 
-// FIX HERE: Added 'COLLATE utf8mb4_general_ci' to the JOIN condition to resolve mismatch permanently
+// FIX 3: JOIN condition ko bhi strict rakha hai
 $sql .= "THEN e.amount ELSE 0 END),0) as total_amount FROM categories c LEFT JOIN expenses e ON c.id = e.category_id COLLATE utf8mb4_general_ci GROUP BY c.id, c.category_name";
 
 if (!empty($filter_category)) { $sql .= " HAVING total_amount>-1 AND cat_id=? "; $params[]=$filter_category; }
