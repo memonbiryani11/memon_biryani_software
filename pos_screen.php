@@ -212,7 +212,7 @@ html,body{
 .prod-grid::-webkit-scrollbar{width:3px;}
 .prod-grid::-webkit-scrollbar-thumb{background:var(--brand-g);border-radius:3px;}
 @media(min-width:640px){.prod-grid{grid-template-columns:repeat(3,1fr);gap:12px;}}
-@media(min-width:1024px){.prod-grid{grid-template-columns:repeat(4,1fr);gap:14px;}}
+@media(min-width:1024px){.prod-grid{grid-template-columns:repeat(6,1fr);gap:14px;}}
 
 .p-card{
   background:var(--surface);
