@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# 1. Force remove .php from URL bars (R=301 redirect)
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+)\.php[\s?] [NC]
+RewriteRule ^([^\.]+)\.php$ $1 [R=301,L,NE]
+
+# 2. Map extensionless request internally to actual file
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
