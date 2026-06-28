@@ -726,7 +726,7 @@ function animTr(){
 }
 animTr();
 
-/* ═══ THEME ═══ */
+/* ═══ THEME ═══ *//
 function setTheme(t){
   document.documentElement.setAttribute('data-theme',t);
   localStorage.setItem('mbTheme',t);
