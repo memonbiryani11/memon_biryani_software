@@ -1,17 +1,17 @@
 <?php
 // Local
-// $host = 'localhost';
-// $db   = 'memon_biryani_software';
-// $user = 'root'; 
-// $pass = '';     
-// $charset = 'utf8mb4';
+$host = 'localhost';
+$db   = 'memon_biryani_software';
+$user = 'root'; 
+$pass = '';     
+$charset = 'utf8mb4';
 
 // Server
-$host = 'localhost';
-$db   = 'u164642147_support';
-$user = 'u164642147_support'; 
-$pass = 'Admin@260902';     
-$charset = 'utf8mb4';
+// $host = 'localhost';
+// $db   = 'u164642147_support';
+// $user = 'u164642147_support'; 
+// $pass = 'Admin@260902';     
+// $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 $options = [
