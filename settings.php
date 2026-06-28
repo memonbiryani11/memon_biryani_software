@@ -4,14 +4,22 @@ require_once 'expense_functions.php';
 require_once 'db.php';
 checkSession();
 
-$msg       = "";
+// Hostinger collation issue permanent solution fix
+$pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_general_ci");
+
+$msg   = "";
 $msg_type  = "ok"; // ok | err
 
 // 1. ADD CATEGORY
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_category'])) {
     $res = createCategory($_POST['category_name']);
-    if ($res === "SUCCESS") { $msg = "Category successfully created!"; $msg_type = "ok"; }
-    else { $msg = $res; $msg_type = "err"; }
+    if ($res === "SUCCESS") { 
+        $msg = "Category successfully created!"; 
+        $msg_type = "ok"; 
+    } else { 
+        $msg = $res; 
+        $msg_type = "err"; 
+    }
 }
 
 // 2. EDIT/UPDATE CATEGORY
@@ -20,27 +28,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_category'])) {
     $cat_name = trim($_POST['category_name']);
     if (!empty($cat_name)) {
         $stmt = $pdo->prepare("UPDATE categories SET category_name=? WHERE id=?");
-        if ($stmt->execute([$cat_name, $cat_id])) { $msg = "Category updated successfully!"; $msg_type = "ok"; }
-        else { $msg = "Error: Category could not be updated."; $msg_type = "err"; }
+        if ($stmt->execute([$cat_name, $cat_id])) { 
+            $msg = "Category updated successfully!"; 
+            $msg_type = "ok"; 
+        } else { 
+            $msg = "Error: Category could not be updated."; 
+            $msg_type = "err"; 
+        }
     }
 }
 
-// 3. DELETE CATEGORY
+// 3. FIX: SOFT DELETE CATEGORY (Taake purana naam records me zinda rahe)
 if (isset($_GET['delete_id'])) {
     $delete_id = intval($_GET['delete_id']);
-    $chk = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE category_id=?");
-    $chk->execute([$delete_id]);
-    if ($chk->fetchColumn() > 0) {
-        $msg = "Cannot delete — this category has existing expense records!";
-        $msg_type = "err";
+    
+    // Yahan hum row delete nahi kar rahe, sirf is_deleted ko 1 kar rahe hain
+    $stmt = $pdo->prepare("UPDATE categories SET is_deleted = 1 WHERE id = ?");
+    if ($stmt->execute([$delete_id])) {
+        
+        $current_page = basename($_SERVER['SCRIPT_NAME']); 
+        header("Location: " . $current_page . "?msg=deleted");
+        exit();
+        
     } else {
-        $stmt = $pdo->prepare("DELETE FROM categories WHERE id=?");
-        if ($stmt->execute([$delete_id])) { $msg = "Category deleted successfully!"; $msg_type = "ok"; }
+        $msg = "Error: Category delete nahi ho saki.";
+        $msg_type = "err";
     }
 }
 
-// 4. FETCH ALL CATEGORIES
-$categories = $pdo->query("SELECT * FROM categories ORDER BY category_name ASC")->fetchAll();
+// Check if redirected from a successful delete
+if (isset($_GET['msg']) && $_GET['msg'] === 'deleted') {
+    $msg = "Category deleted successfully!";
+    $msg_type = "ok";
+}
+
+// 4. FETCH ONLY ACTIVE CATEGORIES (Taake delete shuda yahan nazar na aayein)
+$categories = $pdo->query("SELECT * FROM categories WHERE is_deleted = 0 ORDER BY category_name ASC")->fetchAll();
 
 // Shared UI vars
 $user_name     = htmlspecialchars($_SESSION['user_name'] ?? 'Muhammad Hamza');
@@ -51,6 +74,7 @@ if (function_exists('getActiveNotificationsForUser')) {
     $notif_count   = count($notifications);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -465,8 +489,8 @@ tbody tr:last-child td{border-bottom:none;}
                   <button class="action-btn edit-btn" onclick="showEdit(<?php echo $cat['id']; ?>)">
                     <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                   </button>
-                  <a href="expense_categories.php?delete_id=<?php echo $cat['id']; ?>" class="action-btn del-btn" onclick="return confirm('Delete this category?')">
-                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete
+                  <a href="<?php echo basename($_SERVER['SCRIPT_NAME']); ?>?delete_id=<?php echo $cat['id']; ?>" class="action-btn del-btn" onclick="return confirm('Delete this category?')">
+                      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete
                   </a>
                 </div>
               </td>

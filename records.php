@@ -4,6 +4,9 @@ require_once 'expense_functions.php';
 require_once 'db.php';
 checkSession();
 
+// Hostinger collation issue permanent solution fix
+$pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_general_ci");
+
 $msg = "";
 $msg_color = "green";
 
@@ -40,18 +43,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_expense_amount'
     }
 }
 
-// 3. FETCH ALL RECORDS
+// 3. FIX: FETCH ALL RECORDS WITH LEFT JOIN (Taake category delete hone par bhi record gayab na ho)
 $query = "
     SELECT 
         e.id AS expense_row_id,
-        c.category_name,
+        COALESCE(c.category_name, 'Uncategorized') AS category_name,
         e.amount,
         e.date,
         e.expense_day,
         e.expense_month,
         e.expense_year
     FROM expenses e
-    JOIN categories c ON e.category_id = c.id
+    LEFT JOIN categories c ON e.category_id = c.id
     ORDER BY e.date DESC, e.id DESC
 ";
 $records = $pdo->query($query)->fetchAll();
