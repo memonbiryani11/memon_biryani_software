@@ -1,0 +1,16 @@
+RewriteEngine On
+RewriteBase /memon_biryani_software/
+
+# 1. Force remove .php if accessed directly (records.php -> records)
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+)\.php[\s?] [NC]
+RewriteRule ^(.*)\.php$ $1 [R=301,L]
+
+# 2. Map the extensionless URL back to the actual .php file internally
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+# 3. Handle 404 Fallback relatively without drive letters
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ 404.php [L]
