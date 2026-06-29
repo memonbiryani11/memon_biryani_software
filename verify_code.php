@@ -3,28 +3,26 @@ require_once 'auth_functions.php';
 $msg = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // 1. Form inputs capture karein
-    $token = trim($_POST['token']);
-    $newPassword = trim($_POST['new_password']);
-    
-    // 2. Auth engine se password update process execute karein
-    $res = resetPassword($token, $newPassword);
-    
-    if ($res === "PASSWORD_CHANGED") {
-        // 3. ENVIRONMENT CHECK: Local vs Production Redirect Setup
-        if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1') {
-            // Local environment redirect path
-            $redirectUrl = "/Memon_Biryani_Software/login?msg=PasswordUpdatedSuccessfully";
-        } else {
-            // Live production domain strict absolute redirect (support.memonbiryani.com)
-            $redirectUrl = "https://support.memonbiryani.com/login?msg=PasswordUpdatedSuccessfully";
-        }
+    // Verify code ke form me input names 'token' aur 'new_password' hone chahiye
+    if (isset($_POST['token']) && isset($_POST['new_password'])) {
+        $token       = trim($_POST['token']);
+        $newPassword = trim($_POST['new_password']);
         
-        header("Location: " . $redirectUrl);
-        exit();
+        $res = resetPassword($token, $newPassword);
+        
+        if ($res === "PASSWORD_CHANGED") {
+            if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1') {
+                $redirectUrl = "/Memon_Biryani_Software/login?msg=PasswordUpdatedSuccessfully";
+            } else {
+                $redirectUrl = "https://support.memonbiryani.com/login?msg=PasswordUpdatedSuccessfully";
+            }
+            header("Location: " . $redirectUrl);
+            exit();
+        } else {
+            $msg = $res;
+        }
     } else {
-        // Agar code invalid ya expire ho chuka ho
-        $msg = $res;
+        $msg = "Please fill in all required parameters (Verification code & New password).";
     }
 }
 ?>

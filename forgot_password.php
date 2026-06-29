@@ -3,19 +3,21 @@ require_once 'auth_functions.php';
 $msg = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $res = requestPasswordReset($_POST['email']);
-    
-    if ($res === "SUCCESS_LIVE") {
-        // Automatically detects network host environment to prevent rewrite routing conflicts
-        $redirectUrl = ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1')
-            ? "/Memon_Biryani_Software/verify_code?msg=SecurityCodeDispatched"
-            : "/verify_code?msg=SecurityCodeDispatched";
-            
-        header("Location: " . $redirectUrl);
-        exit();
-    } else {
-        // Captures clean error feedback from auth engine
-        $msg = $res;
+    // Is page par sirf email submit hoti hai
+    if (isset($_POST['email'])) {
+        $res = requestPasswordReset($_POST['email']);
+        
+        if ($res === "SUCCESS_LIVE") {
+            // Automatically detects network host environment to prevent rewrite routing conflicts
+            $redirectUrl = ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1')
+                ? "/Memon_Biryani_Software/verify_code?msg=SecurityCodeDispatched"
+                : "/verify_code?msg=SecurityCodeDispatched";
+                
+            header("Location: " . $redirectUrl);
+            exit();
+        } else {
+            $msg = $res;
+        }
     }
 }
 ?>
@@ -25,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <strong style="font-weight: 600;">System Alert:</strong> <?php echo htmlspecialchars($msg); ?>
     </div>
 <?php endif; ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
