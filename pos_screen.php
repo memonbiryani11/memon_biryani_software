@@ -9,7 +9,9 @@ $products   = $pdo->query("SELECT * FROM pos_products ORDER BY product_name ASC"
 
 $user_name     = htmlspecialchars($_SESSION['user_name'] ?? 'Muhammad Hamza');
 $user_initials = strtoupper(substr($user_name, 0, 1));
-$notif_count   = 0; $notifications = [];
+$notif_count   = 0; 
+$notifications = [];
+
 if (function_exists('getActiveNotificationsForUser')) {
     $notifications = getActiveNotificationsForUser($_SESSION['user_id']);
     $notif_count   = count($notifications);
@@ -595,7 +597,7 @@ function animTr(){tx.clearRect(0,0,TW,TH);pts=pts.filter(function(p){return p.a>
 animTr();
 
 /* ══ THEME ══ */
-function setTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('mbTheme',t);['l','d','c'].forEach(function(x){document.getElementById('th-'+x).classList.remove('act');});document.getElementById('th-'+{light:'l',dark:'d',custom:'c'}[t]).classList.add('act');}
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('mbTheme',t);['l','d','c'].forEach(function(x){var el=document.getElementById('th-'+x); if(el) el.classList.remove('act');});var tgt={light:'l',dark:'d',custom:'c'}[t]; var btn=document.getElementById('th-'+tgt); if(btn) btn.classList.add('act');}
 (function(){setTheme(localStorage.getItem('mbTheme')||'light');})();
 
 /* ══ SIDEBAR ══ */
@@ -606,11 +608,11 @@ function tog(id,el){document.getElementById(id).classList.toggle('on');el.classL
 /* ══ BELL ══ */
 function togBell(e){e.stopPropagation();document.getElementById('bm').classList.toggle('on');}
 
-/* ══ USER DD ══ */
+/* ══ USER DROPDOWN ══ */
 function togUdd(e){e.stopPropagation();document.getElementById('udd').classList.toggle('on');}
 document.addEventListener('click',function(e){
-  if(!e.target.closest('.nb-usr'))document.getElementById('udd').classList.remove('on');
-  if(!e.target.closest('.nb-bell')&&!e.target.closest('#bm'))document.getElementById('bm').classList.remove('on');
+  if(!e.target.closest('.nb-usr')) { var udd=document.getElementById('udd'); if(udd) udd.classList.remove('on'); }
+  if(!e.target.closest('.nb-bell')&&!e.target.closest('#bm')) { var bm=document.getElementById('bm'); if(bm) bm.classList.remove('on'); }
 });
 
 /* ══ CATEGORY FILTER ══ */
@@ -643,6 +645,8 @@ function renderCart(){
   var keys=Object.keys(cart);
   var totalItems=0,totalAmt=0;
 
+  if(!container) return;
+
   if(keys.length===0){
     container.innerHTML='<div class="cart-empty"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Cart is empty</div>';
   } else {
@@ -665,54 +669,80 @@ function renderCart(){
     container.innerHTML=html;
   }
 
-  // Update header count
-  document.getElementById('hdrCount').textContent=totalItems+' item'+(totalItems!==1?'s':'');
+  // Update header count element Safely
+  var hdrCount = document.getElementById('hdrCount');
+  if(hdrCount) hdrCount.textContent=totalItems+' item'+(totalItems!==1?'s':'');
 
-  // Update footer
-  document.getElementById('footItems').textContent=totalItems;
-  document.getElementById('footSub').textContent='Rs. '+totalAmt.toLocaleString();
-  document.getElementById('footTotal').textContent='Rs. '+totalAmt.toLocaleString();
+  // Update footer info elements safely
+  var footItems = document.getElementById('footItems');
+  var footSub = document.getElementById('footSub');
+  var footTotal = document.getElementById('footTotal');
+  if(footItems) footItems.textContent=totalItems;
+  if(footSub) footSub.textContent='Rs. '+totalAmt.toLocaleString();
+  if(footTotal) footTotal.textContent='Rs. '+totalAmt.toLocaleString();
 
-  // FAB badge
+  // FAB badge configuration
   var badge=document.getElementById('cartBadge');
-  if(totalItems>0){badge.textContent=totalItems;badge.classList.add('show');}
-  else{badge.classList.remove('show');}
+  if(badge) {
+    if(totalItems>0){badge.textContent=totalItems;badge.classList.add('show');}
+    else{badge.classList.remove('show');}
+  }
 
-  // Checkout btn
-  document.getElementById('checkoutBtn').disabled=(keys.length===0);
+  // Checkout button control
+  var checkoutBtn = document.getElementById('checkoutBtn');
+  if(checkoutBtn) checkoutBtn.disabled=(keys.length===0);
 }
 
 function esc(str){return str.replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 
-/* ══ CART OPEN/CLOSE ══ */
+/* ══ CART PANEL CONTROL ══ */
 function toggleCart(){
   var p=document.getElementById('cartPanel');
-  p.classList.toggle('on');
+  if(p) p.classList.toggle('on');
 }
-function closeCart(){document.getElementById('cartPanel').classList.remove('on');}
+function closeCart(){var p=document.getElementById('cartPanel'); if(p) p.classList.remove('on');}
 
-/* ══ CHECKOUT — original logic preserved ══ */
+/* ══ CHECKOUT PROCESS (Clean URLs Configured) ══ */
 function processCheckoutInvoice(){
-  if(Object.keys(cart).length===0){alert("Cart is empty!");return;}
-  fetch('pos_process_checkout.php',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(cart)
+  if(Object.keys(cart).length===0){
+    alert("Cart is empty!");
+    return;
+  }
+  
+  // Extension '.php' removed for complete compatibility across systems
+  fetch('pos_process_checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cart)
   })
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.status==='success'){
-      cart={};renderCart();closeCart();
-      var f=document.getElementById('flashOk');
-      f.classList.add('show');
-      setTimeout(function(){f.classList.remove('show');},2400);
+  .then(function(response){
+    if(!response.ok) { throw new Error('HTTP network status error: ' + response.status); }
+    return response.json();
+  })
+  .then(function(data){
+    if(data.status === 'success' || data.status === 'SUCCESS'){
+      cart={}; 
+      renderCart(); 
+      closeCart();
+      
+      var flashElement = document.getElementById('flashOk');
+      if(flashElement){
+        flashElement.classList.add('show');
+        setTimeout(function(){ flashElement.classList.remove('show'); }, 2400);
+      } else {
+        alert("Transaction completed successfully!");
+      }
     } else {
-      alert("Error saving transaction data logs.");
+      alert(data.message || "Failed to finalize sale processing logs.");
     }
   })
-  .catch(function(){alert("Network error. Please try again.");});
+  .catch(function(error){
+    console.error('POS Checkout Communications Error:', error);
+    alert("Network communication error. Please check your system connection.");
+  });
 }
 
+// Initial cart setup invocation
 renderCart();
 </script>
 </body>
