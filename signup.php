@@ -441,7 +441,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <span></span>
         </div>
 
-        <p class="login-link">Already have an account? <a href="login.php">Sign in</a></p>
+        <p class="login-link">Already have an account? <a href="index.php">Sign in</a></p>
 
     </div>
 

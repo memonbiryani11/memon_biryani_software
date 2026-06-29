@@ -1,7 +1,7 @@
 <?php
 // Local
 // $host = 'localhost';
-// $db   = 'memon_biryani_software';
+// $db   = 'u164642147_support';
 // $user = 'root'; 
 // $pass = '';     
 // $charset = 'utf8mb4';
