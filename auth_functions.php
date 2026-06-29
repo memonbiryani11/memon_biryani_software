@@ -78,22 +78,27 @@ function loginUser($email, $password) {
 
 // 3. SECURE STATE AUTHENTICATION & CACHE ISOLATION INTERFACE
 function checkSession() {
-    // Aggressive browser session cache termination policy
     header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
     header("Cache-Control: post-check=0, pre-check=0", false);
     header("Pragma: no-cache");
     header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
     if (!isset($_SESSION['user_id'])) {
-        header("Location: login");
+        // Fallback explicit mapping to prevent rewrite breakage
+        $redirectUrl = ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1') 
+            ? "/Memon_Biryani_Software/login" 
+            : "/login";
+        header("Location: " . $redirectUrl);
         exit();
     }
     
-    // Auto session expiration window constraint (6 Hours validation)
     if (time() - $_SESSION['login_time'] > 21600) {
         session_unset();
         session_destroy();
-        header("Location: login?msg=Session Expired");
+        $redirectUrl = ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1') 
+            ? "/Memon_Biryani_Software/login?msg=SessionExpired" 
+            : "/login?msg=SessionExpired";
+        header("Location: " . $redirectUrl);
         exit();
     }
 }
@@ -125,22 +130,18 @@ function requestPasswordReset($email) {
             $mail->Username = 'info@memonbiryani.com';
             $mail->Password = 'Memon@12345.'; 
 
-            // ENVIRONMENT INTERCEPTOR: Automation mapping for Local vs Production networks
             if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1') {
-                // Local Infrastructure (XAMPP SMTP Relay Environment Settings)
                 $mail->Host       = 'localhost'; 
                 $mail->SMTPSecure = false;
                 $mail->SMTPAutoTLS = false;
                 $mail->Port       = 25; 
             } else {
-                // Live Production Infrastructure Configuration
-                $mail->Host       = 'smtp.hostinger.com'; // Resolved Hostinger Gateway Endpoint
+                $mail->Host       = 'smtp.hostinger.com'; 
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
                 $mail->Port       = 587; 
                 $mail->Timeout    = 25;
             }
 
-            // Client Payload Packet Routing
             $mail->setFrom('info@memonbiryani.com', 'Memon Biryani Software');
             $mail->addAddress($email); 
 

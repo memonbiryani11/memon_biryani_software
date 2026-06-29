@@ -6,13 +6,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $res = requestPasswordReset($_POST['email']);
     
     if ($res === "SUCCESS_LIVE") {
-        header("Location: verify_code.php?msg=Code aapki email par bhej diya gaya hai!");
+        // Automatically detects network host environment to prevent rewrite routing conflicts
+        $redirectUrl = ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1')
+            ? "/Memon_Biryani_Software/verify_code?msg=SecurityCodeDispatched"
+            : "/verify_code?msg=SecurityCodeDispatched";
+            
+        header("Location: " . $redirectUrl);
         exit();
     } else {
+        // Captures clean error feedback from auth engine
         $msg = $res;
     }
 }
 ?>
+
+<?php if (!empty($msg)): ?>
+    <div class="alert alert-danger" style="background-color: #fff5f5; border: 1px solid #fc8181; color: #c53030; padding: 12px; border-radius: 6px; margin: 15px 0; font-family: Arial, sans-serif; font-size: 14px;">
+        <strong style="font-weight: 600;">System Alert:</strong> <?php echo htmlspecialchars($msg); ?>
+    </div>
+<?php endif; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
