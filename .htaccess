@@ -1,12 +1,47 @@
 RewriteEngine On
 
-# 1. Force remove .php from URL bars (R=301 redirect)
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+)\.php[\s?] [NC]
-RewriteRule ^([^\.]+)\.php$ $1 [R=301,L,NE]
+# =====================================================================
+# 0. DISABLE CACHE (Browser me cache jama na hone ke liye)
+# =====================================================================
+<IfModule mod_headers.c>
+    Header Set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+    Header Set Pragma "no-cache"
+    Header Set Expires "Wed, 11 Jan 1984 05:00:00 GMT"
+</IfModule>
 
-# 2. Map extensionless request internally to actual file
+# =====================================================================
+# 1. LIVE SERVER RULES (Folder: support / Subdomain Root)
+# =====================================================================
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)$ [NC]
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+)\.php[\s?] [NC]
+RewriteRule ^([^\.]+)\.php$ /$1 [R=302,L,NE]
+
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)$ [NC]
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^([^\.]+)$ $1.php [NC,L]
 
-# Memon Software
+# Live Server 404 Fallback
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ /404.php [L]
+
+
+# =====================================================================
+# 2. LOCAL XAMPP RULES (Folder: Memon_Biryani_Software)
+# =====================================================================
+RewriteCond %{HTTP_HOST} ^(localhost|127\.0\.0\.1)$ [NC]
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+)\.php[\s?] [NC]
+RewriteRule ^([^\.]+)\.php$ /Memon_Biryani_Software/$1 [R=302,L,NE]
+
+RewriteCond %{HTTP_HOST} ^(localhost|127\.0\.0\.1)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+# Local XAMPP 404 Fallback
+RewriteCond %{HTTP_HOST} ^(localhost|127\.0\.0\.1)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ /Memon_Biryani_Software/404.php [L]
