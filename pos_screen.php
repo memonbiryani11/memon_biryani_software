@@ -9,9 +9,7 @@ $products   = $pdo->query("SELECT * FROM pos_products ORDER BY product_name ASC"
 
 $user_name     = htmlspecialchars($_SESSION['user_name'] ?? 'Muhammad Hamza');
 $user_initials = strtoupper(substr($user_name, 0, 1));
-$notif_count   = 0; 
-$notifications = [];
-
+$notif_count   = 0; $notifications = [];
 if (function_exists('getActiveNotificationsForUser')) {
     $notifications = getActiveNotificationsForUser($_SESSION['user_id']);
     $notif_count   = count($notifications);
@@ -202,58 +200,68 @@ html,body{
 .cat-pill.act{background:var(--brand);color:#fff;border-color:var(--brand);box-shadow:0 2px 10px var(--brand-g);}
 
 /* PRODUCT GRID — phone:2, tablet:3, desktop:4 */
+/* Grid: phone=2, tablet=3, desktop=6 */
 .prod-grid{
   display:grid;
   grid-template-columns:repeat(2,1fr);
-  gap:10px;
+  row-gap:14px;
+  column-gap:10px;
   overflow-y:auto;
   flex:1;
-  align-items:start;
+  align-items:start;   /* each card only as tall as its content */
   align-content:start;
+  padding-bottom:80px; /* space for FAB button */
 }
 .prod-grid::-webkit-scrollbar{width:3px;}
 .prod-grid::-webkit-scrollbar-thumb{background:var(--brand-g);border-radius:3px;}
-@media(min-width:640px){.prod-grid{grid-template-columns:repeat(3,1fr);gap:12px;}}
-@media(min-width:1024px){.prod-grid{grid-template-columns:repeat(6,1fr);gap:14px;}}
+@media(min-width:580px){
+  .prod-grid{grid-template-columns:repeat(3,1fr);row-gap:16px;column-gap:12px;}
+}
+@media(min-width:1024px){
+  .prod-grid{grid-template-columns:repeat(6,1fr);row-gap:18px;column-gap:14px;}
+}
 
+/* Card — content-fit height, no overflow:hidden so nothing clips */
 .p-card{
   background:var(--surface);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border:1px solid var(--border);border-radius:var(--radius);
-  overflow:hidden;cursor:pointer;
+  cursor:pointer;
+  display:flex;flex-direction:column;
+  overflow:hidden;        /* keep border-radius clean on image */
   transition:transform .18s,box-shadow .18s,border-color .18s;
   animation:fadeUp .3s ease both;
-  display:inline-flex;
-  flex-direction:column;
-  height:fit-content;
-  align-self:start;
 }
 .p-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px var(--brand-g);border-color:var(--brand);}
-.p-card:active{transform:scale(.96);}
+.p-card:active{transform:scale(.97);opacity:.9;}
 
+/* Image — fixed height per breakpoint, never clips text below */
 .p-card img{
-  width:100%;height:110px;
+  width:100%;
+  height:80px;
   object-fit:cover;
   display:block;
   flex-shrink:0;
   background:var(--bg2);
   transition:transform .22s;
 }
+@media(min-width:580px){.p-card img{height:95px;}}
+@media(min-width:1024px){.p-card img{height:110px;}}
 .p-card:hover img{transform:scale(1.04);}
 
+/* Info — padding around name + price */
 .p-card .p-info{
-  padding:8px 10px 10px;
+  padding:7px 9px 9px;
   display:flex;flex-direction:column;gap:3px;
 }
 .p-card .p-name{
-  font-size:13px;font-weight:600;
+  font-size:12px;font-weight:600;
   color:var(--text);line-height:1.3;
 }
 .p-card .p-price{
-  font-size:14px;font-weight:700;
+  font-size:13px;font-weight:700;
   color:var(--brand);
 }
-.p-card:active{opacity:.85;}
 
 /* ══════════════════════ CART PANEL ══════════════════════ */
 /* Cart toggle button — always visible, bottom right */
@@ -597,7 +605,7 @@ function animTr(){tx.clearRect(0,0,TW,TH);pts=pts.filter(function(p){return p.a>
 animTr();
 
 /* ══ THEME ══ */
-function setTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('mbTheme',t);['l','d','c'].forEach(function(x){var el=document.getElementById('th-'+x); if(el) el.classList.remove('act');});var tgt={light:'l',dark:'d',custom:'c'}[t]; var btn=document.getElementById('th-'+tgt); if(btn) btn.classList.add('act');}
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('mbTheme',t);['l','d','c'].forEach(function(x){document.getElementById('th-'+x).classList.remove('act');});document.getElementById('th-'+{light:'l',dark:'d',custom:'c'}[t]).classList.add('act');}
 (function(){setTheme(localStorage.getItem('mbTheme')||'light');})();
 
 /* ══ SIDEBAR ══ */
@@ -608,11 +616,11 @@ function tog(id,el){document.getElementById(id).classList.toggle('on');el.classL
 /* ══ BELL ══ */
 function togBell(e){e.stopPropagation();document.getElementById('bm').classList.toggle('on');}
 
-/* ══ USER DROPDOWN ══ */
+/* ══ USER DD ══ */
 function togUdd(e){e.stopPropagation();document.getElementById('udd').classList.toggle('on');}
 document.addEventListener('click',function(e){
-  if(!e.target.closest('.nb-usr')) { var udd=document.getElementById('udd'); if(udd) udd.classList.remove('on'); }
-  if(!e.target.closest('.nb-bell')&&!e.target.closest('#bm')) { var bm=document.getElementById('bm'); if(bm) bm.classList.remove('on'); }
+  if(!e.target.closest('.nb-usr'))document.getElementById('udd').classList.remove('on');
+  if(!e.target.closest('.nb-bell')&&!e.target.closest('#bm'))document.getElementById('bm').classList.remove('on');
 });
 
 /* ══ CATEGORY FILTER ══ */
@@ -620,7 +628,7 @@ function filterCat(cat, btn){
   document.querySelectorAll('.cat-pill').forEach(function(b){b.classList.remove('act');});
   btn.classList.add('act');
   document.querySelectorAll('.p-card').forEach(function(c){
-    c.style.display=(cat==='all'||c.dataset.cat===cat)?'block':'none';
+    c.style.display=(cat==='all'||c.dataset.cat===cat)?'flex':'none';
   });
 }
 
@@ -645,8 +653,6 @@ function renderCart(){
   var keys=Object.keys(cart);
   var totalItems=0,totalAmt=0;
 
-  if(!container) return;
-
   if(keys.length===0){
     container.innerHTML='<div class="cart-empty"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Cart is empty</div>';
   } else {
@@ -669,80 +675,54 @@ function renderCart(){
     container.innerHTML=html;
   }
 
-  // Update header count element Safely
-  var hdrCount = document.getElementById('hdrCount');
-  if(hdrCount) hdrCount.textContent=totalItems+' item'+(totalItems!==1?'s':'');
+  // Update header count
+  document.getElementById('hdrCount').textContent=totalItems+' item'+(totalItems!==1?'s':'');
 
-  // Update footer info elements safely
-  var footItems = document.getElementById('footItems');
-  var footSub = document.getElementById('footSub');
-  var footTotal = document.getElementById('footTotal');
-  if(footItems) footItems.textContent=totalItems;
-  if(footSub) footSub.textContent='Rs. '+totalAmt.toLocaleString();
-  if(footTotal) footTotal.textContent='Rs. '+totalAmt.toLocaleString();
+  // Update footer
+  document.getElementById('footItems').textContent=totalItems;
+  document.getElementById('footSub').textContent='Rs. '+totalAmt.toLocaleString();
+  document.getElementById('footTotal').textContent='Rs. '+totalAmt.toLocaleString();
 
-  // FAB badge configuration
+  // FAB badge
   var badge=document.getElementById('cartBadge');
-  if(badge) {
-    if(totalItems>0){badge.textContent=totalItems;badge.classList.add('show');}
-    else{badge.classList.remove('show');}
-  }
+  if(totalItems>0){badge.textContent=totalItems;badge.classList.add('show');}
+  else{badge.classList.remove('show');}
 
-  // Checkout button control
-  var checkoutBtn = document.getElementById('checkoutBtn');
-  if(checkoutBtn) checkoutBtn.disabled=(keys.length===0);
+  // Checkout btn
+  document.getElementById('checkoutBtn').disabled=(keys.length===0);
 }
 
 function esc(str){return str.replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 
-/* ══ CART PANEL CONTROL ══ */
+/* ══ CART OPEN/CLOSE ══ */
 function toggleCart(){
   var p=document.getElementById('cartPanel');
-  if(p) p.classList.toggle('on');
+  p.classList.toggle('on');
 }
-function closeCart(){var p=document.getElementById('cartPanel'); if(p) p.classList.remove('on');}
+function closeCart(){document.getElementById('cartPanel').classList.remove('on');}
 
-/* ══ CHECKOUT PROCESS (Clean URLs Configured) ══ */
+/* ══ CHECKOUT — original logic preserved ══ */
 function processCheckoutInvoice(){
-  if(Object.keys(cart).length===0){
-    alert("Cart is empty!");
-    return;
-  }
-  
-  // Extension '.php' removed for complete compatibility across systems
-  fetch('pos_process_checkout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cart)
+  if(Object.keys(cart).length===0){alert("Cart is empty!");return;}
+  fetch('pos_process_checkout.php',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(cart)
   })
-  .then(function(response){
-    if(!response.ok) { throw new Error('HTTP network status error: ' + response.status); }
-    return response.json();
-  })
-  .then(function(data){
-    if(data.status === 'success' || data.status === 'SUCCESS'){
-      cart={}; 
-      renderCart(); 
-      closeCart();
-      
-      var flashElement = document.getElementById('flashOk');
-      if(flashElement){
-        flashElement.classList.add('show');
-        setTimeout(function(){ flashElement.classList.remove('show'); }, 2400);
-      } else {
-        alert("Transaction completed successfully!");
-      }
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.status==='success'){
+      cart={};renderCart();closeCart();
+      var f=document.getElementById('flashOk');
+      f.classList.add('show');
+      setTimeout(function(){f.classList.remove('show');},2400);
     } else {
-      alert(data.message || "Failed to finalize sale processing logs.");
+      alert("Error saving transaction data logs.");
     }
   })
-  .catch(function(error){
-    console.error('POS Checkout Communications Error:', error);
-    alert("Network communication error. Please check your system connection.");
-  });
+  .catch(function(){alert("Network error. Please try again.");});
 }
 
-// Initial cart setup invocation
 renderCart();
 </script>
 </body>
