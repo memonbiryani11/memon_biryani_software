@@ -527,7 +527,9 @@ html,body{
 
     <!-- Product Grid -->
     <div class="prod-grid" id="prodGrid">
-      
+      <?php foreach($products as $p):
+        $img = !empty($p['image_path']) ? $p['image_path'] : 'uploads/default.png';
+      ?>
         <div class="p-card" style="position:relative;"
           data-cat="<?php echo htmlspecialchars($p['category_name'],ENT_QUOTES); ?>"
           onclick="addToCart('<?php echo htmlspecialchars($p['product_name'],ENT_QUOTES); ?>',<?php echo (float)$p['price']; ?>)">
@@ -537,7 +539,7 @@ html,body{
             <div class="p-price">Rs. <?php echo number_format($p['price'],0); ?></div>
           </div>
         </div>
-
+      <?php endforeach; ?>
     </div>
   </div>
 
