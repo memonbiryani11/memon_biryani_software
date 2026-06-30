@@ -220,6 +220,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   grid-template-columns:repeat(2,1fr);
   gap:12px;
 }
+@media(max-width:479px){.expense-grid{grid-template-columns:1fr;}}
 @media(min-width:580px){.expense-grid{grid-template-columns:repeat(3,1fr);gap:14px;}}
 @media(min-width:1024px){.expense-grid{grid-template-columns:repeat(3,1fr);gap:16px;}}
 
