@@ -526,12 +526,12 @@ html,body{
   <!-- LEFT: Products -->
   <div id="prodArea">
     <!-- Category Pills -->
-    <!-- <div class="cat-row">
-      <button class="cat-pill act" onclick="filterCat('all',this)">All Items</button>
+    <div class="cat-row">
+      <!-- <button class="cat-pill act" onclick="filterCat('all',this)">All Items</button> -->
       <?php foreach($categories as $cat): ?>
         <button class="cat-pill" onclick="filterCat('<?php echo htmlspecialchars($cat,ENT_QUOTES); ?>',this)"><?php echo htmlspecialchars($cat); ?></button>
       <?php endforeach; ?>
-    </div> -->
+    </div>
 
     <!-- Product Grid -->
     <div class="prod-grid" id="prodGrid">
