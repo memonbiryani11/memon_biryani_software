@@ -537,7 +537,7 @@ html,body{
             <div class="p-price">Rs. <?php echo number_format($p['price'],0); ?></div>
           </div>
         </div>
-      <?php endforeach; ?>
+
     </div>
   </div>
 
