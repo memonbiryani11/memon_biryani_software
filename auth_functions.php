@@ -142,7 +142,7 @@ function requestPasswordReset($email) {
                 $mail->Timeout    = 25;
             }
 
-            $mail->setFrom('info@memonbiryani.com', 'Memon Biryani Software');
+            $mail->setFrom('info@memonbiryani.com', 'Memon Biryani');
             $mail->addAddress($email); 
 
             $mail->isHTML(true);
