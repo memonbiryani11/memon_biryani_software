@@ -1,9 +1,3 @@
-<?php if (isset($_GET['msg']) && $_GET['msg'] === 'PasswordUpdatedSuccessfully'): ?>
-    <div class="alert alert-success" style="background-color: #f0fff4; border: 1px solid #68d391; color: #22543d; padding: 12px; border-radius: 6px; margin: 15px 0; font-family: Arial, sans-serif; font-size: 14px; text-align: center;">
-        <strong>Success!</strong> Your security credentials have been successfully updated. Please authenticate to continue.
-    </div>
-<?php endif; ?>
-
 <?php
 // Top par cache kill headers taake dashboard se back aane par glitch na ho
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
@@ -329,9 +323,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <span></span>
         </div>
 
-        <p class="signup-link">
-            New to platform? <a href="signup.php">Create an account</a>
-        </p>
     </div>
 
     <p class="footer">© 2025 Memon Biryani Software &middot; All rights reserved</p>
