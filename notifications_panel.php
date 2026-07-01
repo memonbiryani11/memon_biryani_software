@@ -40,7 +40,7 @@ $all_active_notifications = getActiveNotificationsForUser($current_user_id);
         <span class="popup-close-x" onclick="closePopupAlert()">&times;</span>
     </div>
     <div id="popupAlertBody" class="popup-body-text">
-        User Owais ne data insert kiya hai.
+        User Owais Insert New Query.
     </div>
 </div>
 

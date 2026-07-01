@@ -4,16 +4,39 @@ require_once 'auth_functions.php';
 require_once 'db.php';
 checkSession();
 
+// --- FILTER MECHANISM START ---
+$filter_mode = $_GET['filter_mode'] ?? 'daily'; // daily, monthly, yearly
 $selected_date = $_GET['filter_date'] ?? date('Y-m-d');
+$selected_month = $_GET['filter_month'] ?? date('Y-m');
+$selected_year = $_GET['filter_year'] ?? date('Y');
+
+// SQL dynamic conditions setup karne ke liye baseline query adjustments
+$where_clause = "";
+$params = [];
+
+if ($filter_mode === 'monthly') {
+    // Matches YYYY-MM format
+    $where_clause = "DATE_FORMAT(sell_date, '%Y-%m') = ?";
+    $params[] = $selected_month;
+} elseif ($filter_mode === 'yearly') {
+    // Matches YYYY format
+    $where_clause = "DATE_FORMAT(sell_date, '%Y') = ?";
+    $params[] = $selected_year;
+} else {
+    // Default is Daily
+    $where_clause = "sell_date = ?";
+    $params[] = $selected_date;
+}
+// --- FILTER MECHANISM END ---
 
 // 1. SUMMARY FOR ACTIVE SALES
-$summary_stmt = $pdo->prepare("SELECT SUM(total_amount) AS overall_earnings, COUNT(*) AS checkouts_processed FROM sell_records WHERE sell_date = ? AND (status != 'cancelled' OR status IS NULL)");
-$summary_stmt->execute([$selected_date]);
+$summary_stmt = $pdo->prepare("SELECT SUM(total_amount) AS overall_earnings, COUNT(*) AS checkouts_processed FROM sell_records WHERE $where_clause AND (status != 'cancelled' OR status IS NULL)");
+$summary_stmt->execute($params);
 $summary = $summary_stmt->fetch();
 
 // 2. SUMMARY FOR CANCELLED SALES
-$cancel_stmt = $pdo->prepare("SELECT SUM(total_amount) AS total_cancelled, COUNT(*) AS count_cancelled FROM sell_records WHERE sell_date = ? AND status = 'cancelled'");
-$cancel_stmt->execute([$selected_date]);
+$cancel_stmt = $pdo->prepare("SELECT SUM(total_amount) AS total_cancelled, COUNT(*) AS count_cancelled FROM sell_records WHERE $where_clause AND status = 'cancelled'");
+$cancel_stmt->execute($params);
 $cancel_summary = $cancel_stmt->fetch();
 
 $total_active_earnings  = $summary['overall_earnings']      ?? 0;
@@ -29,11 +52,11 @@ $details_stmt = $pdo->prepare("
            SUM(si.price * si.quantity) AS consolidated_subtotal
     FROM sell_items si
     JOIN sell_records sr ON si.sell_record_id = sr.id
-    WHERE sr.sell_date = ? AND (sr.status != 'cancelled' OR sr.status IS NULL)
+    WHERE $where_clause AND (sr.status != 'cancelled' OR sr.status IS NULL)
     GROUP BY si.product_name, si.price
     ORDER BY total_qty_sold DESC
 ");
-$details_stmt->execute([$selected_date]);
+$details_stmt->execute($params);
 $sales_breakdown = $details_stmt->fetchAll();
 
 // Shared UI vars
@@ -93,8 +116,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 #sb{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--surface);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border-right:1px solid var(--border);box-shadow:4px 0 32px rgba(0,0,0,.10);z-index:1000;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
 #sb.on{transform:translateX(0);}
 .sb-head{display:flex;align-items:center;gap:10px;padding:16px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.sb-ico{width:38px;height:38px;border-radius:10px;background:var(--brand);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px var(--brand-g);flex-shrink:0;}
-.sb-ico svg{width:20px;height:20px;fill:#fff;}
+.sb-ico"><svg viewBox="0 0 24 24"><path d="M12 2C7 2 3 6 3 11c0 3.5 2 6.5 5 8.2V21h8v-1.8c3-1.7 5-4.7 5-8.2 0-5-4-9-9-9zm0 2c3.9 0 7 3.1 7 7 0 2.8-1.6 5.2-4 6.5V19H9v-1.5C6.6 16.2 5 13.8 5 11c0-3.9 3.1-7 7-7z"/></svg></div>
 .sb-title h3{font-size:13.5px;font-weight:700;color:var(--brand);line-height:1.2;}
 .sb-title span{font-size:10px;color:var(--text-m);text-transform:uppercase;letter-spacing:.7px;}
 .sb-x{margin-left:auto;width:28px;height:28px;border-radius:7px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-m);transition:background .15s,color .15s;}
@@ -184,13 +206,45 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .pg-hdr-left h2{font-size:20px;font-weight:700;color:var(--text);}
 .pg-hdr-left p{font-size:12.5px;color:var(--text-m);margin-top:2px;}
 
-/* Date filter */
+/* ══ NEW DYNAMIC FILTER COMPONENT ══ */
+.filter-box-wrap {
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mode-selectors {
+  display: flex;
+  gap: 12px;
+}
+.mode-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-m);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.mode-label input {
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+.filter-inputs-row {
+  display: flex;
+  align-items: center;
+}
 .date-input{
   height:36px;padding:0 12px;
   border:1px solid var(--border);border-radius:8px;
   font-size:13px;font-weight:600;color:var(--text);
   background:var(--surface-s);
-  backdrop-filter:blur(8px);outline:none;font-family:inherit;
+  outline:none;font-family:inherit;
   cursor:pointer;
   transition:border-color .17s,box-shadow .17s;
 }
@@ -274,7 +328,6 @@ tbody tr:last-child td{border-bottom:none;}
 <canvas id="trail"></canvas>
 <div id="overlay" onclick="closeSb()"></div>
 
-<!-- ══ SIDEBAR ══ -->
 <aside id="sb">
   <div class="sb-head">
     <div class="sb-ico"><svg viewBox="0 0 24 24"><path d="M12 2C7 2 3 6 3 11c0 3.5 2 6.5 5 8.2V21h8v-1.8c3-1.7 5-4.7 5-8.2 0-5-4-9-9-9zm0 2c3.9 0 7 3.1 7 7 0 2.8-1.6 5.2-4 6.5V19H9v-1.5C6.6 16.2 5 13.8 5 11c0-3.9 3.1-7 7-7z"/></svg></div>
@@ -284,8 +337,6 @@ tbody tr:last-child td{border-bottom:none;}
   <nav class="sb-nav">
     <p class="nl">Main</p>
     <a href="dashboard.php" class="ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
-    <a href="insert_data.php" class="ni"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Insert Data</a>
-    <a href="records.php" class="ni"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Records</a>
     <p class="nl">POS Modules</p>
     <div class="nt open" onclick="tog('ps',this)"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>POS Modules<svg class="cv" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
     <div class="nsub on" id="ps">
@@ -298,9 +349,9 @@ tbody tr:last-child td{border-bottom:none;}
     <p class="nl">Expenses</p>
     <div class="nt" onclick="tog('es',this)"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Expense Module<svg class="cv" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
     <div class="nsub" id="es">
-      <a href="add_expense.php" class="ni"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add New Expense</a>
-      <a href="expense_records.php" class="ni"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Expense History</a>
-      <a href="expense_categories.php" class="ni"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Category Setup</a>
+      <a href="insert_data.php" class="ni"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add New Expense</a>
+      <a href="records.php" class="ni"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Expense History</a>
+      <a href="settings.php" class="ni"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Category Setup</a>
     </div>
     <p class="nl">Settings</p>
     <div class="nt" onclick="tog('ss',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1 0 4.93 19.07 10 10 0 0 0 19.07 4.93z"/></svg>Settings<svg class="cv" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
@@ -320,7 +371,6 @@ tbody tr:last-child td{border-bottom:none;}
   </div>
 </aside>
 
-<!-- ══ NAVBAR ══ -->
 <nav id="nb">
   <button class="nb-menu" onclick="openSb()"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
   <a href="dashboard.php" class="nb-logo">
@@ -349,7 +399,6 @@ tbody tr:last-child td{border-bottom:none;}
   </div>
 </nav>
 
-<!-- Bell Modal -->
 <div id="bm">
   <div class="bm-h">
     <h4>Notifications<?php if($notif_count>0) echo " ($notif_count)"; ?></h4>
@@ -371,22 +420,54 @@ tbody tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
-<!-- ══ MAIN ══ -->
 <main id="main">
 
   <div class="pg-hdr">
     <div class="pg-hdr-left">
       <h2>Sales Accountability Audit</h2>
-      <p>Daily revenue breakdown &amp; item performance</p>
+      <p>Dynamic revenue breakdown &amp; item performance</p>
     </div>
-    <form method="GET" style="margin:0;">
-      <input type="date" name="filter_date" class="date-input"
-             value="<?php echo htmlspecialchars($selected_date); ?>"
-             onchange="this.form.submit()">
+
+    <form method="GET" style="margin:0;" id="filterForm">
+      <div class="filter-box-wrap">
+        <div class="mode-selectors">
+          <label class="mode-label">
+            <input type="radio" name="filter_mode" value="daily" <?php echo $filter_mode === 'daily' ? 'checked' : ''; ?> onchange="switchFilterMode('daily')"> Daily
+          </label>
+          <label class="mode-label">
+            <input type="radio" name="filter_mode" value="monthly" <?php echo $filter_mode === 'monthly' ? 'checked' : ''; ?> onchange="switchFilterMode('monthly')"> Monthly
+          </label>
+          <label class="mode-label">
+            <input type="radio" name="filter_mode" value="yearly" <?php echo $filter_mode === 'yearly' ? 'checked' : ''; ?> onchange="switchFilterMode('yearly')"> Yearly
+          </label>
+        </div>
+        
+        <div class="filter-inputs-row">
+          <input type="date" name="filter_date" id="input-daily" class="date-input" 
+                 value="<?php echo htmlspecialchars($selected_date); ?>" 
+                 style="display: <?php echo $filter_mode === 'daily' ? 'block' : 'none'; ?>;"
+                 onchange="this.form.submit()">
+
+          <input type="month" name="filter_month" id="input-monthly" class="date-input" 
+                 value="<?php echo htmlspecialchars($selected_month); ?>" 
+                 style="display: <?php echo $filter_mode === 'monthly' ? 'block' : 'none'; ?>;"
+                 onchange="this.form.submit()">
+
+          <select name="filter_year" id="input-yearly" class="date-input" 
+                  style="display: <?php echo $filter_mode === 'yearly' ? 'block' : 'none'; ?>;"
+                  onchange="this.form.submit()">
+            <?php 
+              $current_yr = (int)date('Y');
+              for($y = $current_yr; $y >= $current_yr - 5; $y--): 
+            ?>
+              <option value="<?php echo $y; ?>" <?php echo (int)$selected_year === $y ? 'selected' : ''; ?>><?php echo $y; ?></option>
+            <?php endfor; ?>
+          </select>
+        </div>
+      </div>
     </form>
   </div>
 
-  <!-- KPI METRICS -->
   <div class="metrics-grid">
     <div class="metric-card">
       <div class="mc-left">
@@ -411,7 +492,6 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
 
-  <!-- BREAKDOWN TABLE -->
   <div class="report-card">
     <div class="card-title">
       <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -437,7 +517,7 @@ tbody tr:last-child td{border-bottom:none;}
             </tr>
           <?php endforeach; else: ?>
             <tr class="empty-row">
-              <td colspan="4">No active sales found for this date.</td>
+              <td colspan="4">No active sales found for this selection.</td>
             </tr>
           <?php endif; ?>
         </tbody>
@@ -448,6 +528,13 @@ tbody tr:last-child td{border-bottom:none;}
 </main>
 
 <script>
+/* DYNAMIC FILTER TOGGLE SYSTEM */
+function switchFilterMode(mode) {
+  document.getElementById('input-daily').style.display = (mode === 'daily') ? 'block' : 'none';
+  document.getElementById('input-monthly').style.display = (mode === 'monthly') ? 'block' : 'none';
+  document.getElementById('input-yearly').style.display = (mode === 'yearly') ? 'block' : 'none';
+}
+
 /* MOUSE TRAIL */
 var tc=document.getElementById('trail'),tx=tc.getContext('2d'),TW,TH,pts=[];
 function rsz(){TW=tc.width=window.innerWidth;TH=tc.height=window.innerHeight;}

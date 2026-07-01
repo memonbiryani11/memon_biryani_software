@@ -4,6 +4,8 @@ require_once 'expense_functions.php';
 require_once 'db.php';
 checkSession();
 
+// include "toast_notification.php";
+
 $userId = $_SESSION['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['clear_notif_id'])) {
@@ -441,6 +443,38 @@ body{
 }
 .ch-tab.act{background:var(--brand);color:#fff;}
 
+
+/* ══ TOAST ══ */
+.toast-wrap{position:fixed;bottom:20px;right:16px;z-index:9000;display:flex;flex-direction:column;gap:10px;max-width:290px;}
+.toast{
+  background:var(--surface-s);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border-s);border-radius:10px;
+  padding:13px 14px;
+  box-shadow:0 6px 24px rgba(0,0,0,.15);
+  border-left:4px solid var(--brand);
+  position:relative;
+  animation:fadeSlideUp .3s ease both;
+}
+.toast.success-toast{border-left-color:var(--success);}
+.toast-close{position:absolute;top:7px;right:9px;background:none;border:none;cursor:pointer;color:var(--text-m);font-size:15px;font-weight:700;padding:0;line-height:1;}
+.toast-close:hover{color:var(--danger);}
+.toast a{text-decoration:none;color:var(--text);display:block;}
+.toast a:hover{color:var(--brand);}
+.toast strong{font-size:13px;color:var(--success);}
+.toast span{font-size:11.5px;color:var(--text-m);}
+
+/* ══ ANIMATIONS ══ */
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes alertIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+@media(max-width:480px){
+  #main{padding:14px 10px;}
+  .pg-hdr h2{font-size:17px;}
+  .btn-submit{width:100%;}
+}
+
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   #main{padding:16px 12px;}
@@ -483,12 +517,12 @@ body{
     <a href="dashboard.php" class="ni act">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard
     </a>
-    <a href="insert_data.php" class="ni">
+    <!-- <a href="insert_data.php" class="ni">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Insert Data
     </a>
     <a href="records.php" class="ni">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Records
-    </a>
+    </a> -->
 
     <p class="nl">POS Modules</p>
     <div class="nt" onclick="tog('ps',this)">
@@ -509,9 +543,9 @@ body{
       <svg class="cv" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <div class="nsub" id="es">
-      <a href="add_expense.php" class="ni"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add New Expense</a>
-      <a href="expense_records.php" class="ni"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Expense History</a>
-      <a href="expense_categories.php" class="ni"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Category Setup</a>
+      <a href="insert_data.php" class="ni"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add New Expense</a>
+      <a href="records.php" class="ni"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Expense History</a>
+      <a href="settings.php" class="ni"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Category Setup</a>
     </div>
 
     <p class="nl">Settings</p>
@@ -697,6 +731,67 @@ body{
     <canvas id="kpiChart" style="max-height:320px;"></canvas>
   </div>
 </main>
+
+
+<?php
+
+$userId = $_SESSION['user_id'];
+$msg = "";
+$alertId = "";
+$alertDate = "";
+
+// Handle Expense Submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_expenses'])) {
+    $filtered_amounts = array_filter($_POST['amounts'], function($value) { return $value !== ''; });
+    $res = insertExpenses($filtered_amounts, $userId, $_POST['selected_date']);
+    if (strpos($res, "SUCCESS:") === 0) {
+        $parts = explode(":", $res);
+        $msg = "SUCCESS_ALERT";
+        $alertId = $parts[1];
+        $alertDate = $parts[2];
+    } else {
+        $msg = $res;
+    }
+}
+
+// Handle Single Notification Clear
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['clear_notif_id'])) {
+    clearNotificationForUser($_POST['clear_notif_id'], $userId);
+    header("Location: insert_data.php"); exit();
+}
+
+?>
+
+<!-- ══ TOASTS ══ -->
+<div class="toast-wrap">
+  <?php if($msg === "SUCCESS_ALERT"): ?>
+    <div class="toast success-toast" id="successToast">
+      <form method="POST" style="margin:0;">
+        <input type="hidden" name="clear_notif_id" value="<?php echo $alertId; ?>">
+        <button type="submit" class="toast-close">&times;</button>
+      </form>
+      <a href="check.php?id=<?php echo $alertId; ?>">
+        <strong>✓ Data Inserted!</strong><br>
+        <span>ID: <?php echo $alertId; ?> | Date: <?php echo $alertDate; ?></span>
+      </a>
+    </div>
+  <?php endif; ?>
+
+  <?php foreach($notifications as $notif): ?>
+    <?php if($notif['id'] != $alertId): ?>
+      <div class="toast">
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="clear_notif_id" value="<?php echo $notif['id']; ?>">
+          <button type="submit" class="toast-close">&times;</button>
+        </form>
+        <a href="check.php?id=<?php echo $notif['id']; ?>">
+          <strong style="color:var(--brand);">Log Alert (ID: <?php echo $notif['id']; ?>)</strong><br>
+          <span><?php echo htmlspecialchars($notif['message']); ?></span>
+        </a>
+      </div>
+    <?php endif; ?>
+  <?php endforeach; ?>
+</div>
 
 <script>
 /* ═══ MOUSE TRAIL ═══ */
