@@ -67,9 +67,10 @@
 
 <?php
 // 1. Safe Session Start
-if (session_status() === PHP_SESSION_NONE) {
+    if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
 
 // 2. Dependency Handler
 if (isset($_SESSION['user_id']) && isset($pdo)) {
