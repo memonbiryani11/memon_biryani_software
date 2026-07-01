@@ -234,7 +234,7 @@ canvas#trail{
 
     </form>
 
-    <a class="back-link" href="login.php">
+    <a class="back-link" href="https://support.memonbiryani.com/">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Return to Login
     </a>
